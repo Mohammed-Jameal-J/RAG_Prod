@@ -1,6 +1,9 @@
 # Secrets
 .env
 
+# Claude Code tool config (local dev tooling, not part of the app)
+.claude/
+
 # Virtual environment
 .venv/
 venv/
