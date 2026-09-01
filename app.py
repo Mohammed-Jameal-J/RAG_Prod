@@ -229,6 +229,8 @@ if "index" not in st.session_state:
     st.session_state.index = EmbeddingIndex()
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "page_count" not in st.session_state:
+    st.session_state.page_count = 0
 
 with st.sidebar:
     st.markdown(
@@ -263,15 +265,19 @@ with st.sidebar:
     ):
         with st.spinner("Reading and indexing documents...", show_time=True):
             all_chunks = []
+            total_pages = 0
             for f in uploaded_files:
-                text = load_pdf(f)
+                text, page_count = load_pdf(f)
+                total_pages += page_count
                 all_chunks.extend(chunk_text(text, chunk_size, overlap))
 
             if all_chunks:
                 st.session_state.index.build(all_chunks)
                 st.session_state.messages = []
+                st.session_state.page_count = total_pages
                 st.success(
-                    f"Indexed {len(all_chunks)} chunks from {len(uploaded_files)} file(s).",
+                    f"Indexed {len(all_chunks)} chunks from {len(uploaded_files)} file(s) "
+                    f"— {total_pages} page(s) total.",
                     icon=":material/check_circle:",
                 )
             else:
@@ -280,7 +286,7 @@ with st.sidebar:
     if st.session_state.index.chunk_count:
         st.markdown(
             f'<p class="gz-caption">{icon("check-circle", 14, "var(--accent-cyan)")} Index ready — '
-            f'{st.session_state.index.chunk_count} chunks</p>',
+            f'{st.session_state.index.chunk_count} chunks · {st.session_state.page_count} page(s)</p>',
             unsafe_allow_html=True,
         )
     else:
@@ -298,10 +304,11 @@ with st.sidebar:
     if st.button("Clear session", icon=":material/delete_sweep:", use_container_width=True):
         st.session_state.index = EmbeddingIndex()
         st.session_state.messages = []
+        st.session_state.page_count = 0
         st.rerun()
 
 st.markdown(
-    f'<h1> Chat with your PDFs</h1>',
+    f'<h1>{icon("sparkles", 34, "var(--accent-pink)")} Chat with your PDFs</h1>',
     unsafe_allow_html=True,
 )
 st.markdown(

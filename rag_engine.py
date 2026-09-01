@@ -28,9 +28,10 @@ def get_embedder():
     return _embedder
 
 
-def load_pdf(file) -> str:
+def load_pdf(file) -> tuple[str, int]:
     reader = PdfReader(file)
-    return "\n".join(page.extract_text() or "" for page in reader.pages)
+    text = "\n".join(page.extract_text() or "" for page in reader.pages)
+    return text, len(reader.pages)
 
 
 def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 150) -> list[str]:
