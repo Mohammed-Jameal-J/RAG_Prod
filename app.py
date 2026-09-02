@@ -1,3 +1,4 @@
+import base64
 import os
 
 import streamlit as st
@@ -11,7 +12,8 @@ st.markdown(
     '<link rel="preconnect" href="https://fonts.googleapis.com">'
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
     '<link rel="stylesheet" '
-    'href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap">',
+    'href="https://fonts.googleapis.com/css2?family=Marcellus&family=Space+Grotesk:wght@500;700'
+    '&family=Inter:wght@400;500;600&display=swap">',
     unsafe_allow_html=True,
 )
 
@@ -34,6 +36,40 @@ def icon(name: str, size: int = 18, color: str = "var(--accent-cyan)") -> str:
     )
 
 
+def _build_shards_svg_b64() -> str:
+    """Angular glass-shard shapes baked into one static SVG image, used as a
+    background-image on .stApp::before. Individually shaped/positioned shards
+    without any extra DOM elements - a position:fixed sibling layer of
+    stAppViewContainer was found to silently break background-color painting
+    for other elements on the page (chat avatars/bubbles), so the shard
+    visuals live entirely inside one pseudo-element's background instead.
+    """
+    shards = [
+        dict(w=280, h=90, s=90, tx=760, ty=30, rot=-18, color="0,229,255", op=0.30),
+        dict(w=210, h=64, s=70, tx=980, ty=140, rot=12, color="255,46,159", op=0.26),
+        dict(w=170, h=170, s=60, tx=430, ty=-30, rot=4, color="255,176,32", op=0.18),
+        dict(w=250, h=80, s=85, tx=980, ty=560, rot=-30, color="0,229,255", op=0.20),
+        dict(w=260, h=90, s=88, tx=30, ty=680, rot=10, color="255,46,159", op=0.20),
+        dict(w=190, h=190, s=65, tx=-80, ty=380, rot=-8, color="255,176,32", op=0.14),
+        dict(w=150, h=50, s=55, tx=140, ty=40, rot=20, color="0,229,255", op=0.13),
+        dict(w=220, h=70, s=78, tx=480, ty=780, rot=-14, color="255,255,255", op=0.09),
+    ]
+    polys = []
+    for sh in shards:
+        w, h, s = sh["w"], sh["h"], sh["s"]
+        points = f"{s},0 {w},0 {w - s},{h} 0,{h}"
+        polys.append(
+            f'<g transform="translate({sh["tx"]},{sh["ty"]}) rotate({sh["rot"]})">'
+            f'<polygon points="{points}" fill="rgba({sh["color"]},{sh["op"]})"/>'
+            f"</g>"
+        )
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" '
+        'preserveAspectRatio="none">' + "".join(polys) + "</svg>"
+    )
+    return base64.b64encode(svg.encode()).decode()
+
+
 THEME_CSS = """
 <style>
 :root {
@@ -52,8 +88,8 @@ THEME_CSS = """
 }
 
 h1, h1 span {
-    font-family: 'Space Grotesk', sans-serif !important;
-    font-weight: 700 !important;
+    font-family: 'Marcellus', serif !important;
+    font-weight: 400 !important;
     color: var(--text-main) !important;
 }
 
@@ -244,26 +280,25 @@ h2, h3, h4 {
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    filter: blur(1px);
+    filter: blur(1.5px);
     background:
-        linear-gradient(118deg, transparent 38%, rgba(0,229,255,0.11) 39.5%, rgba(0,229,255,0.11) 41.5%, transparent 43%),
-        linear-gradient(118deg, transparent 58%, rgba(255,46,159,0.10) 59.5%, rgba(255,46,159,0.10) 61.5%, transparent 63%),
-        linear-gradient(65deg, transparent 18%, rgba(255,176,32,0.09) 19.5%, rgba(255,176,32,0.09) 21%, transparent 22.5%),
-        linear-gradient(65deg, transparent 72%, rgba(0,229,255,0.08) 73.5%, rgba(0,229,255,0.08) 75%, transparent 76.5%),
+        url("data:image/svg+xml;base64,__SHARDS_SVG_B64__"),
         radial-gradient(ellipse 60% 50% at 80% 12%, rgba(255,46,159,0.10), transparent 60%),
         radial-gradient(ellipse 55% 45% at 12% 88%, rgba(0,229,255,0.09), transparent 60%);
-    background-size: 180% 180%, 180% 180%, 160% 160%, 160% 160%, 100% 100%, 100% 100%;
+    background-size: 130% 130%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
     animation: shardsShift 42s ease-in-out infinite;
 }
 @keyframes shardsShift {
-    0%, 100% { background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%; }
-    50% { background-position: 18% 12%, -14% -10%, -10% 8%, 12% -14%, 0% 0%, 0% 0%; }
+    0%, 100% { background-position: 0% 0%, 0% 0%, 0% 0%; }
+    50% { background-position: 6% 4%, 0% 0%, 0% 0%; }
 }
 @media (prefers-reduced-motion: reduce) {
     .stApp::before { animation: none; }
 }
 </style>
 """
+THEME_CSS = THEME_CSS.replace("__SHARDS_SVG_B64__", _build_shards_svg_b64())
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 APP_PASSWORD = os.getenv("APP_PASSWORD")
