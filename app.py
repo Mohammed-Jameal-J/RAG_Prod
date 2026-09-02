@@ -135,6 +135,13 @@ h2, h3, h4 {
 }
 [data-testid="stChatInput"] > div {
     background: transparent !important;
+    border-color: transparent !important;
+}
+[data-testid="stChatInput"]:focus-within > div {
+    border-color: var(--accent-cyan) !important;
+}
+[data-testid="stChatInput"]:focus-within {
+    border-color: var(--accent-cyan) !important;
 }
 [data-testid="stChatInput"] textarea {
     color: var(--text-main) !important;
