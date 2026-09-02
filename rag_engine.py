@@ -5,7 +5,6 @@ import numpy as np
 from dotenv import load_dotenv
 from groq import Groq
 from pypdf import PdfReader
-from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
@@ -24,7 +23,9 @@ _embedder = None
 def get_embedder():
     global _embedder
     if _embedder is None:
-        _embedder = SentenceTransformer("all-MiniLM-L6-v2")
+        from fastembed import TextEmbedding
+
+        _embedder = TextEmbedding()
     return _embedder
 
 
@@ -55,19 +56,19 @@ class EmbeddingIndex:
 
     def build(self, chunks: list[str]) -> None:
         embedder = get_embedder()
-        vectors = embedder.encode(chunks, convert_to_numpy=True, show_progress_bar=False)
+        vectors = np.asarray(list(embedder.embed(chunks)), dtype="float32")
         dim = vectors.shape[1]
         self.index = faiss.IndexFlatL2(dim)
-        self.index.add(np.asarray(vectors, dtype="float32"))
+        self.index.add(vectors)
         self.chunks = chunks
 
     def search(self, query: str, k: int = 4) -> list[str]:
         if self.index is None or not self.chunks:
             return []
         embedder = get_embedder()
-        query_vector = embedder.encode([query], convert_to_numpy=True)
+        query_vector = np.asarray(list(embedder.embed([query])), dtype="float32")
         k = min(k, len(self.chunks))
-        _, indices = self.index.search(np.asarray(query_vector, dtype="float32"), k)
+        _, indices = self.index.search(query_vector, k)
         return [self.chunks[i] for i in indices[0] if i != -1]
 
     @property

@@ -1,6 +1,6 @@
 streamlit
 pypdf
-sentence-transformers
+fastembed
 faiss-cpu
 groq
 python-dotenv
