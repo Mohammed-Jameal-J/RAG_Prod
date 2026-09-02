@@ -171,6 +171,9 @@ h2, h3, h4 {
 [data-testid="stChatMessageAvatarCustom"] {
     background: rgba(255,255,255,0.99) !important;
 }
+[data-testid="stChatMessageAvatarCustom"] [data-testid="stIconMaterial"] {
+    color: #31333F !important;
+}
 
 .typing-dots {
     display: inline-flex;
@@ -196,7 +199,9 @@ h2, h3, h4 {
 }
 
 [data-testid="stBottom"] > div {
-    background: transparent !important;
+    background: rgba(10,10,12,0.92) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 [data-testid="stChatInput"] {
