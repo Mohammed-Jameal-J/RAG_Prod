@@ -8,7 +8,6 @@ load_dotenv()
 st.set_page_config(page_title="PDF Chat", page_icon=":material/auto_awesome:", layout="wide")
 
 ICON_PATHS = {
-    "bot-message-square": '<path d="M12 6V2H8"/><path d="M15 11v2"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M20 16a2 2 0 0 1-2 2H8.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 4 20.286V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M9 11v2"/>',
     "folder-open": '<path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
     "upload-cloud": '<path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>',
     "hourglass": '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
@@ -178,73 +177,119 @@ h2, h3, h4 {
     z-index: 1;
 }
 
-.aurora-bg {
+[data-testid="stHeader"] {
+    background: transparent !important;
+}
+
+/* Streamlit hides the sidebar collapse arrow until hover by default - keep it visible. */
+[data-testid="stSidebarCollapseButton"] {
+    visibility: visible !important;
+    opacity: 0.85 !important;
+    transition: opacity 0.15s ease;
+}
+[data-testid="stSidebarCollapseButton"]:hover {
+    opacity: 1 !important;
+}
+
+.stApp {
+    animation: appFadeIn 0.5s ease;
+}
+@keyframes appFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .stApp { animation: none; }
+}
+
+.shards-bg {
     position: fixed;
     inset: 0;
     overflow: hidden;
     pointer-events: none;
     z-index: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 80% 12%, rgba(255,46,159,0.10), transparent 60%),
+        radial-gradient(ellipse 55% 45% at 12% 88%, rgba(0,229,255,0.09), transparent 60%),
+        var(--bg);
 }
-.aurora-blob {
+.shard {
     position: absolute;
-    border-radius: 50%;
-    filter: blur(90px);
-    opacity: 0.28;
-    will-change: transform;
+    mix-blend-mode: screen;
+    filter: blur(2.5px);
+    will-change: transform, opacity;
+    animation-name: shardDrift;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
 }
-.aurora-1 {
-    width: clamp(240px, 32vw, 460px);
-    height: clamp(240px, 32vw, 460px);
-    top: -8%;
-    left: -6%;
-    background: var(--accent-cyan);
-    animation: auroraDrift1 28s ease-in-out infinite;
-}
-.aurora-2 {
-    width: clamp(200px, 26vw, 380px);
-    height: clamp(200px, 26vw, 380px);
-    bottom: -12%;
-    right: -4%;
-    background: var(--accent-pink);
-    animation: auroraDrift2 34s ease-in-out infinite;
-}
-.aurora-3 {
-    width: clamp(160px, 20vw, 300px);
-    height: clamp(160px, 20vw, 300px);
-    top: 34%;
-    right: 12%;
-    background: var(--accent-amber);
-    animation: auroraDrift3 24s ease-in-out infinite;
-}
+.shard-a { clip-path: polygon(0% 45%, 22% 0%, 100% 32%, 78% 100%, 0% 68%); }
+.shard-b { clip-path: polygon(12% 0%, 100% 22%, 88% 100%, 0% 78%); }
+.shard-c { clip-path: polygon(0% 22%, 100% 0%, 82% 62%, 28% 100%); }
 
-@keyframes auroraDrift1 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(6vw, 4vh) scale(1.15); }
-}
-@keyframes auroraDrift2 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(-5vw, -5vh) scale(1.1); }
-}
-@keyframes auroraDrift3 {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    50% { transform: translate(-4vw, 5vh) scale(0.9); }
+@keyframes shardDrift {
+    0%, 100% {
+        transform: translate(0, 0) rotate(var(--rot0, -4deg));
+        opacity: var(--op-lo, 0.28);
+    }
+    50% {
+        transform: translate(var(--dx, 3vw), var(--dy, 2vh)) rotate(var(--rot1, 5deg));
+        opacity: var(--op-hi, 0.5);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .aurora-blob { animation: none; }
+    .shard { animation: none; opacity: var(--op-hi, 0.4); }
 }
 </style>
 """
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
-st.markdown(
-    '<div class="aurora-bg">'
-    '<div class="aurora-blob aurora-1"></div>'
-    '<div class="aurora-blob aurora-2"></div>'
-    '<div class="aurora-blob aurora-3"></div>'
-    "</div>",
-    unsafe_allow_html=True,
+_SHARDS = [
+    dict(shape="a", top="4%", left="68%", w="150px", h="60px", rot="-18deg",
+         grad="135deg, rgba(0,229,255,0.30), rgba(0,229,255,0.02)",
+         dx="2.5vw", dy="-1.5vh", rot0="-18deg", rot1="-12deg", op_lo="0.14", op_hi="0.26",
+         dur="24s", delay="0s"),
+    dict(shape="b", top="14%", left="84%", w="110px", h="46px", rot="12deg",
+         grad="120deg, rgba(255,46,159,0.28), rgba(255,46,159,0.02)",
+         dx="-2vw", dy="2vh", rot0="12deg", rot1="20deg", op_lo="0.12", op_hi="0.22",
+         dur="30s", delay="1.5s"),
+    dict(shape="c", top="2%", left="46%", w="90px", h="90px", rot="4deg",
+         grad="150deg, rgba(255,176,32,0.24), rgba(255,176,32,0.02)",
+         dx="1.5vw", dy="2.5vh", rot0="4deg", rot1="-3deg", op_lo="0.08", op_hi="0.16",
+         dur="28s", delay="3s"),
+    dict(shape="b", top="60%", left="90%", w="130px", h="54px", rot="-30deg",
+         grad="140deg, rgba(0,229,255,0.26), rgba(0,229,255,0.02)",
+         dx="-2.5vw", dy="-2vh", rot0="-30deg", rot1="-22deg", op_lo="0.10", op_hi="0.20",
+         dur="34s", delay="0.8s"),
+    dict(shape="a", top="78%", left="8%", w="140px", h="58px", rot="10deg",
+         grad="130deg, rgba(255,46,159,0.26), rgba(255,46,159,0.02)",
+         dx="2vw", dy="-2vh", rot0="10deg", rot1="4deg", op_lo="0.10", op_hi="0.20",
+         dur="26s", delay="2s"),
+    dict(shape="c", top="42%", left="-4%", w="100px", h="100px", rot="-8deg",
+         grad="145deg, rgba(255,176,32,0.20), rgba(255,176,32,0.02)",
+         dx="1.8vw", dy="1.5vh", rot0="-8deg", rot1="-2deg", op_lo="0.07", op_hi="0.14",
+         dur="32s", delay="4s"),
+    dict(shape="b", top="6%", left="16%", w="80px", h="34px", rot="20deg",
+         grad="120deg, rgba(0,229,255,0.22), rgba(0,229,255,0.02)",
+         dx="-1.5vw", dy="1.8vh", rot0="20deg", rot1="28deg", op_lo="0.07", op_hi="0.14",
+         dur="22s", delay="2.6s"),
+    dict(shape="a", top="88%", left="54%", w="120px", h="48px", rot="-14deg",
+         grad="135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.01)",
+         dx="2vw", dy="-1.5vh", rot0="-14deg", rot1="-8deg", op_lo="0.05", op_hi="0.10",
+         dur="29s", delay="1s"),
+]
+
+_shard_divs = "".join(
+    f'<div class="shard shard-{s["shape"]}" style="'
+    f'top:{s["top"]};left:{s["left"]};width:{s["w"]};height:{s["h"]};'
+    f'background:linear-gradient({s["grad"]});'
+    f'--rot0:{s["rot0"]};--rot1:{s["rot1"]};--dx:{s["dx"]};--dy:{s["dy"]};'
+    f'--op-lo:{s["op_lo"]};--op-hi:{s["op_hi"]};'
+    f'animation-duration:{s["dur"]};animation-delay:{s["delay"]};'
+    f'transform:rotate({s["rot"]});"></div>'
+    for s in _SHARDS
 )
+st.markdown(f'<div class="shards-bg">{_shard_divs}</div>', unsafe_allow_html=True)
 
 APP_PASSWORD = os.getenv("APP_PASSWORD")
 
@@ -256,7 +301,7 @@ if APP_PASSWORD:
         _, mid, _ = st.columns([1, 1.2, 1])
         with mid:
             st.markdown(
-                f'<h1>{icon("bot-message-square", 34, "var(--accent-pink)")} Chat with your PDFs</h1>',
+                "<h1>Chat with your PDFs</h1>",
                 unsafe_allow_html=True,
             )
             st.markdown(
@@ -370,7 +415,7 @@ with st.sidebar:
         st.rerun()
 
 st.markdown(
-    f'<h1>{icon("bot-message-square", 34, "var(--accent-pink)")} Chat with your PDFs</h1>',
+    "<h1>Chat with your PDFs</h1>",
     unsafe_allow_html=True,
 )
 st.markdown(
