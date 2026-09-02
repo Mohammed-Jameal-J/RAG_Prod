@@ -116,12 +116,42 @@ h2, h3, h4 {
     border-radius: 18px;
     padding: 4px 8px;
     margin-bottom: 12px;
+    max-width: 78%;
+    width: fit-content;
 }
-[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
-    border-left: 3px solid var(--accent-cyan);
+[data-testid="stChatMessage"]:has([aria-label="Chat message from user"]) {
+    margin-left: auto;
+    margin-right: 0;
+    flex-direction: row-reverse;
+    border-right: 3px solid var(--accent-cyan);
 }
-[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+[data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
+    margin-right: auto;
+    margin-left: 0;
     border-left: 3px solid var(--accent-pink);
+}
+
+.typing-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 2px;
+}
+.typing-dots span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: typingBounce 1.2s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-6px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .typing-dots span { animation: none; opacity: 0.7; }
 }
 
 [data-testid="stBottom"] > div {
@@ -420,6 +450,12 @@ with st.sidebar:
         st.session_state.page_count = 0
         st.rerun()
 
+    st.markdown(
+        '<p class="gz-caption" style="text-align:center;margin-top:24px;opacity:0.6;">'
+        "Copyright © 2026 Builded by Jameal.</p>",
+        unsafe_allow_html=True,
+    )
+
 st.markdown(
     "<h1>Chat with your PDFs</h1>",
     unsafe_allow_html=True,
@@ -490,7 +526,21 @@ if question:
         ]
 
         with st.chat_message("assistant", avatar=":material/smart_toy:"):
-            answer = st.write_stream(ask_groq(question, sources, history))
+            typing_placeholder = st.empty()
+            typing_placeholder.markdown(
+                '<div class="typing-dots"><span></span><span></span><span></span></div>',
+                unsafe_allow_html=True,
+            )
+            stream = ask_groq(question, sources, history)
+            first_chunk = next(stream, None)
+            typing_placeholder.empty()
+
+            def _resume():
+                if first_chunk is not None:
+                    yield first_chunk
+                yield from stream
+
+            answer = st.write_stream(_resume()) if first_chunk is not None else ""
             if sources:
                 with st.expander("Sources", icon=":material/description:"):
                     for i, chunk in enumerate(sources, 1):
