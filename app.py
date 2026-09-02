@@ -162,6 +162,10 @@ h2, h3, h4 {
     border-left: 3px solid var(--accent-pink);
 }
 
+[data-testid="stBottom"] > div {
+    background: transparent !important;
+}
+
 [data-testid="stChatInput"] {
     border-radius: 999px;
     background: rgba(255,255,255,0.05);
@@ -405,7 +409,29 @@ st.markdown(
 )
 
 if not st.session_state.index.chunk_count:
-    st.info("Upload a PDF in the sidebar and click **Process documents** to get started.", icon=":material/upload_file:")
+    st.info(
+        "Upload a PDF in the sidebar and click **Process documents** to get started. "
+        "On a phone, tap the **»** icon in the top-left corner first to open the sidebar.",
+        icon=":material/upload_file:",
+    )
+    st.markdown(
+        """
+        <style>
+        [data-testid="stExpandSidebarButton"] {
+            animation: hintPulse 2s ease-in-out infinite;
+            border-radius: 999px;
+        }
+        @keyframes hintPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.5); }
+            50% { box-shadow: 0 0 0 6px rgba(0,229,255,0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            [data-testid="stExpandSidebarButton"] { animation: none; }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 for message in st.session_state.messages:
     avatar = ":material/face:" if message["role"] == "user" else ":material/smart_toy:"
