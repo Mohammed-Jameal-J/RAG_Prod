@@ -27,49 +27,6 @@ def icon(name: str, size: int = 18, color: str = "var(--accent-cyan)") -> str:
     )
 
 
-def network_svg() -> str:
-    """A faint constellation of nodes with data pulses traveling between them."""
-    nodes = [
-        (40, 40), (120, 70), (90, 140), (200, 50), (230, 130),
-        (300, 90), (340, 40), (360, 150), (170, 170),
-    ]
-    edges = [
-        (0, 1), (1, 2), (1, 3), (3, 4), (2, 8),
-        (4, 8), (3, 5), (5, 6), (5, 4), (6, 7), (4, 7),
-    ]
-    colors = ["var(--accent-cyan)", "var(--accent-pink)", "var(--accent-amber)"]
-
-    edge_lines = "".join(
-        f'<line x1="{nodes[a][0]}" y1="{nodes[a][1]}" x2="{nodes[b][0]}" y2="{nodes[b][1]}" class="net-edge"/>'
-        for a, b in edges
-    )
-
-    node_circles = "".join(
-        f'<circle cx="{x}" cy="{y}" r="3.5" fill="{colors[i % len(colors)]}" '
-        f'class="net-node" style="animation-delay:{(i * 0.35) % 3:.2f}s"/>'
-        for i, (x, y) in enumerate(nodes)
-    )
-
-    pulse_edges = [0, 3, 6, 9, 4]
-    pulses = []
-    for i, edge_i in enumerate(pulse_edges):
-        a, b = edges[edge_i]
-        x1, y1 = nodes[a]
-        x2, y2 = nodes[b]
-        color = colors[i % len(colors)]
-        pulses.append(
-            f'<circle r="2.5" class="net-pulse" style="'
-            f"offset-path:path('M{x1},{y1} L{x2},{y2}');"
-            f"color:{color};fill:currentColor;"
-            f'animation-duration:{3 + (i % 3)}s;animation-delay:{i * 0.8:.2f}s"/>'
-        )
-    pulses = "".join(pulses)
-
-    return (
-        '<svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">'
-        f"{edge_lines}{node_circles}{pulses}</svg>"
-    )
-
 THEME_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap');
@@ -173,10 +130,7 @@ h2, h3, h4 {
 }
 [data-testid="stChatInput"] > div {
     background: transparent !important;
-    border-color: transparent !important;
-}
-[data-testid="stChatInput"]:focus-within > div {
-    border-color: var(--accent-cyan) !important;
+    border: none !important;
 }
 [data-testid="stChatInput"]:focus-within {
     border-color: var(--accent-cyan) !important;
@@ -224,56 +178,73 @@ h2, h3, h4 {
     z-index: 1;
 }
 
-.network-bg {
+.aurora-bg {
     position: fixed;
     inset: 0;
     overflow: hidden;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.4;
 }
-.network-bg svg { width: 100%; height: 100%; display: block; }
+.aurora-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.28;
+    will-change: transform;
+}
+.aurora-1 {
+    width: clamp(240px, 32vw, 460px);
+    height: clamp(240px, 32vw, 460px);
+    top: -8%;
+    left: -6%;
+    background: var(--accent-cyan);
+    animation: auroraDrift1 28s ease-in-out infinite;
+}
+.aurora-2 {
+    width: clamp(200px, 26vw, 380px);
+    height: clamp(200px, 26vw, 380px);
+    bottom: -12%;
+    right: -4%;
+    background: var(--accent-pink);
+    animation: auroraDrift2 34s ease-in-out infinite;
+}
+.aurora-3 {
+    width: clamp(160px, 20vw, 300px);
+    height: clamp(160px, 20vw, 300px);
+    top: 34%;
+    right: 12%;
+    background: var(--accent-amber);
+    animation: auroraDrift3 24s ease-in-out infinite;
+}
 
-.net-edge {
-    stroke: rgba(255,255,255,0.12);
-    stroke-width: 1;
+@keyframes auroraDrift1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(6vw, 4vh) scale(1.15); }
+}
+@keyframes auroraDrift2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-5vw, -5vh) scale(1.1); }
+}
+@keyframes auroraDrift3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(-4vw, 5vh) scale(0.9); }
 }
 
-.net-node {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: netPulse 4s ease-in-out infinite;
-}
-@keyframes netPulse {
-    0%, 100% { opacity: 0.35; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.6); }
-}
-
-.net-pulse {
-    offset-distance: 0%;
-    filter: drop-shadow(0 0 3px currentColor);
-    animation-name: netTravel;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-}
-@keyframes netTravel {
-    0% { offset-distance: 0%; opacity: 0; }
-    8% { opacity: 1; }
-    92% { opacity: 1; }
-    100% { offset-distance: 100%; opacity: 0; }
-}
-
-@media (max-width: 640px) {
-    .network-bg { display: none; }
-}
 @media (prefers-reduced-motion: reduce) {
-    .net-node, .net-pulse { animation: none; opacity: 0.5; }
+    .aurora-blob { animation: none; }
 }
 </style>
 """
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
-st.markdown(f'<div class="network-bg">{network_svg()}</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="aurora-bg">'
+    '<div class="aurora-blob aurora-1"></div>'
+    '<div class="aurora-blob aurora-2"></div>'
+    '<div class="aurora-blob aurora-3"></div>'
+    "</div>",
+    unsafe_allow_html=True,
+)
 
 APP_PASSWORD = os.getenv("APP_PASSWORD")
 
