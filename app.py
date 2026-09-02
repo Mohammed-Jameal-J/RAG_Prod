@@ -92,6 +92,9 @@ h1, h1 span {
     font-weight: 400 !important;
     color: var(--text-main) !important;
 }
+@media (max-width: 640px) {
+    h1 { font-size: 28px !important; white-space: nowrap; }
+}
 
 h2, h3, h4 {
     font-family: 'Space Grotesk', sans-serif !important;
