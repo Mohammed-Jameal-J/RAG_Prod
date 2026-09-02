@@ -27,13 +27,47 @@ def icon(name: str, size: int = 18, color: str = "var(--accent-cyan)") -> str:
     )
 
 
-def fish_svg(color: str) -> str:
+def network_svg() -> str:
+    """A faint constellation of nodes with data pulses traveling between them."""
+    nodes = [
+        (40, 40), (120, 70), (90, 140), (200, 50), (230, 130),
+        (300, 90), (340, 40), (360, 150), (170, 170),
+    ]
+    edges = [
+        (0, 1), (1, 2), (1, 3), (3, 4), (2, 8),
+        (4, 8), (3, 5), (5, 6), (5, 4), (6, 7), (4, 7),
+    ]
+    colors = ["var(--accent-cyan)", "var(--accent-pink)", "var(--accent-amber)"]
+
+    edge_lines = "".join(
+        f'<line x1="{nodes[a][0]}" y1="{nodes[a][1]}" x2="{nodes[b][0]}" y2="{nodes[b][1]}" class="net-edge"/>'
+        for a, b in edges
+    )
+
+    node_circles = "".join(
+        f'<circle cx="{x}" cy="{y}" r="3.5" fill="{colors[i % len(colors)]}" '
+        f'class="net-node" style="animation-delay:{(i * 0.35) % 3:.2f}s"/>'
+        for i, (x, y) in enumerate(nodes)
+    )
+
+    pulse_edges = [0, 3, 6, 9, 4]
+    pulses = []
+    for i, edge_i in enumerate(pulse_edges):
+        a, b = edges[edge_i]
+        x1, y1 = nodes[a]
+        x2, y2 = nodes[b]
+        color = colors[i % len(colors)]
+        pulses.append(
+            f'<circle r="2.5" class="net-pulse" style="'
+            f"offset-path:path('M{x1},{y1} L{x2},{y2}');"
+            f"color:{color};fill:currentColor;"
+            f'animation-duration:{3 + (i % 3)}s;animation-delay:{i * 0.8:.2f}s"/>'
+        )
+    pulses = "".join(pulses)
+
     return (
-        '<svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">'
-        f'<path d="M20 25 L0 8 L0 42 Z" fill="{color}"/>'
-        f'<ellipse cx="55" cy="25" rx="40" ry="18" fill="{color}"/>'
-        '<circle cx="80" cy="19" r="3" fill="var(--bg)"/>'
-        "</svg>"
+        '<svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">'
+        f"{edge_lines}{node_circles}{pulses}</svg>"
     )
 
 THEME_CSS = """
@@ -186,64 +220,56 @@ h2, h3, h4 {
     z-index: 1;
 }
 
-.fish-tank {
+.network-bg {
     position: fixed;
     inset: 0;
     overflow: hidden;
     pointer-events: none;
     z-index: 0;
+    opacity: 0.4;
 }
-.bg-fish {
-    position: absolute;
-    left: -10vw;
-    opacity: 0.18;
-}
-.bg-fish svg { width: 100%; height: 100%; display: block; }
-.bg-fish-1 {
-    top: 14%;
-    width: clamp(56px, 7vw, 110px);
-    animation: swimA 26s ease-in-out infinite;
-}
-.bg-fish-2 {
-    top: 66%;
-    width: clamp(42px, 5.5vw, 85px);
-    animation: swimB 32s ease-in-out infinite;
-    animation-delay: -9s;
+.network-bg svg { width: 100%; height: 100%; display: block; }
+
+.net-edge {
+    stroke: rgba(255,255,255,0.12);
+    stroke-width: 1;
 }
 
-/* swim right across the tank, flip, swim back */
-@keyframes swimA {
-    0%   { transform: translateX(0)     translateY(0)     scaleX(1); }
-    45%  { transform: translateX(84vw)  translateY(-16px) scaleX(1); }
-    50%  { transform: translateX(84vw)  translateY(-16px) scaleX(-1); }
-    95%  { transform: translateX(0)     translateY(12px)  scaleX(-1); }
-    100% { transform: translateX(0)     translateY(0)     scaleX(1); }
+.net-node {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: netPulse 4s ease-in-out infinite;
 }
-@keyframes swimB {
-    0%   { transform: translateX(0)     translateY(0)    scaleX(1); }
-    45%  { transform: translateX(68vw)  translateY(14px) scaleX(1); }
-    50%  { transform: translateX(68vw)  translateY(14px) scaleX(-1); }
-    95%  { transform: translateX(0)     translateY(-10px) scaleX(-1); }
-    100% { transform: translateX(0)     translateY(0)    scaleX(1); }
+@keyframes netPulse {
+    0%, 100% { opacity: 0.35; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.6); }
+}
+
+.net-pulse {
+    offset-distance: 0%;
+    filter: drop-shadow(0 0 3px currentColor);
+    animation-name: netTravel;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+@keyframes netTravel {
+    0% { offset-distance: 0%; opacity: 0; }
+    8% { opacity: 1; }
+    92% { opacity: 1; }
+    100% { offset-distance: 100%; opacity: 0; }
 }
 
 @media (max-width: 640px) {
-    .fish-tank { display: none; }
+    .network-bg { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .bg-fish { animation: none; }
+    .net-node, .net-pulse { animation: none; opacity: 0.5; }
 }
 </style>
 """
 st.markdown(THEME_CSS, unsafe_allow_html=True)
 
-st.markdown(
-    '<div class="fish-tank">'
-    f'<div class="bg-fish bg-fish-1">{fish_svg("var(--accent-cyan)")}</div>'
-    f'<div class="bg-fish bg-fish-2">{fish_svg("var(--accent-pink)")}</div>'
-    "</div>",
-    unsafe_allow_html=True,
-)
+st.markdown(f'<div class="network-bg">{network_svg()}</div>', unsafe_allow_html=True)
 
 APP_PASSWORD = os.getenv("APP_PASSWORD")
 
