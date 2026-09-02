@@ -114,7 +114,10 @@ def ask_groq(question: str, context_chunks: list[str], history: list[dict]):
         "You are a helpful assistant that answers questions using only the "
         "provided document context. If the answer is not contained in the "
         "context, say you couldn't find it in the document instead of "
-        "guessing.\n\nContext:\n" + context
+        "guessing. Greetings and small talk (e.g. \"hi\", \"thanks\", "
+        "\"who are you\") aren't document questions - reply to those "
+        "naturally and briefly instead of saying you couldn't find them "
+        "in the document.\n\nContext:\n" + context
     )
 
     messages = [{"role": "system", "content": system_prompt}]
