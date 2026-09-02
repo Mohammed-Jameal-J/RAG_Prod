@@ -1,4 +1,6 @@
 import os
+import time
+from collections import deque
 
 import faiss
 import numpy as np
@@ -18,6 +20,28 @@ if not GROQ_API_KEY:
 
 _client = Groq(api_key=GROQ_API_KEY)
 _embedder = None
+
+RATE_LIMIT_MAX_REQUESTS = 20
+RATE_LIMIT_WINDOW_SECONDS = 60.0
+_request_times: deque[float] = deque()
+
+_ANSWER_CACHE_MAX_SIZE = 200
+_answer_cache: dict[tuple, str] = {}
+
+
+def check_rate_limit() -> bool:
+    """Shared sliding-window limit across every visitor, protecting the Groq quota.
+
+    Returns True if this request is allowed (and records it), False if the
+    app is currently over the limit.
+    """
+    now = time.time()
+    while _request_times and now - _request_times[0] > RATE_LIMIT_WINDOW_SECONDS:
+        _request_times.popleft()
+    if len(_request_times) >= RATE_LIMIT_MAX_REQUESTS:
+        return False
+    _request_times.append(now)
+    return True
 
 
 def get_embedder():
@@ -77,6 +101,13 @@ class EmbeddingIndex:
 
 
 def ask_groq(question: str, context_chunks: list[str], history: list[dict]):
+    # Only cache first-turn questions (no prior conversation) - history makes
+    # the same question mean different things depending on what preceded it.
+    cache_key = (question.strip().lower(), tuple(context_chunks)) if not history else None
+    if cache_key is not None and cache_key in _answer_cache:
+        yield _answer_cache[cache_key]
+        return
+
     context = "\n\n---\n\n".join(context_chunks) if context_chunks else "No context available."
 
     system_prompt = (
@@ -97,7 +128,14 @@ def ask_groq(question: str, context_chunks: list[str], history: list[dict]):
         stream=True,
     )
 
+    answer_parts = []
     for chunk in stream:
         delta = chunk.choices[0].delta.content
         if delta:
+            answer_parts.append(delta)
             yield delta
+
+    if cache_key is not None:
+        if len(_answer_cache) >= _ANSWER_CACHE_MAX_SIZE:
+            _answer_cache.pop(next(iter(_answer_cache)))
+        _answer_cache[cache_key] = "".join(answer_parts)

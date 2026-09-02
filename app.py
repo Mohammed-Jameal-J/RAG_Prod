@@ -1,9 +1,14 @@
+import os
+
 import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
 
 st.set_page_config(page_title="PDF Chat", page_icon=":material/auto_awesome:", layout="wide")
 
 ICON_PATHS = {
-    "sparkles": '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+    "bot-message-square": '<path d="M12 6V2H8"/><path d="M15 11v2"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M20 16a2 2 0 0 1-2 2H8.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 4 20.286V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M9 11v2"/>',
     "folder-open": '<path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
     "upload-cloud": '<path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>',
     "hourglass": '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
@@ -92,7 +97,8 @@ h2, h3, h4 {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0,229,255,0.25);
 }
-[data-testid="stBaseButton-primary"] {
+[data-testid="stBaseButton-primary"],
+[data-testid="stBaseButton-primaryFormSubmit"] {
     background: rgba(255,255,255,0.10) !important;
     border: 1px solid rgba(255,255,255,0.22) !important;
     backdrop-filter: blur(10px);
@@ -142,6 +148,19 @@ h2, h3, h4 {
 [data-testid="stAlert"] {
     border-radius: 16px;
     background: rgba(255,255,255,0.05);
+}
+
+[data-testid="stTextInputRootElement"] {
+    background: transparent !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+}
+[data-testid="stTextInput"] input {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--text-main) !important;
+}
+[data-testid="stTextInput"] input::placeholder {
+    color: var(--text-muted) !important;
 }
 
 ::-webkit-scrollbar { width: 10px; }
@@ -219,8 +238,43 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+APP_PASSWORD = os.getenv("APP_PASSWORD")
+
+if APP_PASSWORD:
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if not st.session_state.authenticated:
+        _, mid, _ = st.columns([1, 1.2, 1])
+        with mid:
+            st.markdown(
+                f'<h1>{icon("bot-message-square", 34, "var(--accent-pink)")} Chat with your PDFs</h1>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                '<p class="gz-caption">This app is password-protected.</p>',
+                unsafe_allow_html=True,
+            )
+            with st.form("login_form"):
+                pwd = st.text_input(
+                    "Password",
+                    type="password",
+                    label_visibility="collapsed",
+                    placeholder="Enter password",
+                )
+                submitted = st.form_submit_button(
+                    "Enter", icon=":material/lock_open:", type="primary", use_container_width=True
+                )
+            if submitted:
+                if pwd == APP_PASSWORD:
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error("Incorrect password.", icon=":material/error:")
+        st.stop()
+
 try:
-    from rag_engine import EmbeddingIndex, GROQ_MODEL, ask_groq, chunk_text, load_pdf
+    from rag_engine import EmbeddingIndex, GROQ_MODEL, ask_groq, check_rate_limit, chunk_text, load_pdf
 except RuntimeError as exc:
     st.error(str(exc), icon=":material/error:")
     st.stop()
@@ -308,7 +362,7 @@ with st.sidebar:
         st.rerun()
 
 st.markdown(
-    f'<h1>{icon("sparkles", 34, "var(--accent-pink)")} Chat with your PDFs</h1>',
+    f'<h1>{icon("bot-message-square", 34, "var(--accent-pink)")} Chat with your PDFs</h1>',
     unsafe_allow_html=True,
 )
 st.markdown(
@@ -340,20 +394,28 @@ if question:
     with st.chat_message("user", avatar=":material/face:"):
         st.markdown(question)
 
-    sources = st.session_state.index.search(question, k=top_k)
-    history = [
-        {"role": m["role"], "content": m["content"]}
-        for m in st.session_state.messages[:-1]
-    ]
+    if not check_rate_limit():
+        answer = "This app is getting a lot of questions right now — please wait a moment and try again."
+        with st.chat_message("assistant", avatar=":material/smart_toy:"):
+            st.warning(answer, icon=":material/hourglass_empty:")
+        st.session_state.messages.append(
+            {"role": "assistant", "content": answer, "sources": []}
+        )
+    else:
+        sources = st.session_state.index.search(question, k=top_k)
+        history = [
+            {"role": m["role"], "content": m["content"]}
+            for m in st.session_state.messages[:-1]
+        ]
 
-    with st.chat_message("assistant", avatar=":material/smart_toy:"):
-        answer = st.write_stream(ask_groq(question, sources, history))
-        if sources:
-            with st.expander("Sources", icon=":material/description:"):
-                for i, chunk in enumerate(sources, 1):
-                    st.markdown(f"**Chunk {i}**")
-                    st.text(chunk)
+        with st.chat_message("assistant", avatar=":material/smart_toy:"):
+            answer = st.write_stream(ask_groq(question, sources, history))
+            if sources:
+                with st.expander("Sources", icon=":material/description:"):
+                    for i, chunk in enumerate(sources, 1):
+                        st.markdown(f"**Chunk {i}**")
+                        st.text(chunk)
 
-    st.session_state.messages.append(
-        {"role": "assistant", "content": answer, "sources": sources}
-    )
+        st.session_state.messages.append(
+            {"role": "assistant", "content": answer, "sources": sources}
+        )

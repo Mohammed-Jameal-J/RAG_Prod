@@ -14,6 +14,9 @@ A Streamlit app that lets you upload one or more PDFs and ask questions about th
 - Adjustable chunk size, chunk overlap, and number of retrieved chunks per question
 - Shows page count and chunk count for whatever you've indexed
 - Supports multiple PDFs combined into a single searchable index
+- Optional password gate (`APP_PASSWORD`) to keep the app private
+- Shared rate limit (20 questions/minute across all visitors) to protect the Groq quota from abuse
+- Repeated first-turn questions are served from an in-memory cache instead of re-calling Groq
 
 ## How it works
 
@@ -109,9 +112,10 @@ RAG_Prod/
 |---|---|---|
 | `GROQ_API_KEY` | Yes | Your Groq API key. The app fails fast with a clear error if this is missing. |
 | `GROQ_MODEL` | No | Groq model ID to use. Defaults to `openai/gpt-oss-120b`. |
+| `APP_PASSWORD` | No | If set, visitors must enter this password before using the app. Leave unset to disable the gate entirely. |
 
 ## Known limitations
 
 - The index is held in memory per session — it resets whenever the app restarts or the browser tab reloads. Re-upload and reprocess your PDF(s) after either.
-- There's no authentication — the deployed link is open to anyone, and every question spends your Groq API quota.
+- The rate limit and cache are per-server-process, in-memory, and reset on restart — fine for a single free-tier instance, not a substitute for a real shared store if you ever scale to multiple instances.
 - Free-tier hosting spins down after ~15 minutes of inactivity; the next request pays a cold-start cost.
