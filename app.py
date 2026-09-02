@@ -110,11 +110,6 @@ h2, h3, h4 {
 }
 
 [data-testid="stChatMessage"] {
-    background: rgba(255,255,255,0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 18px;
-    padding: 4px 8px;
     margin-bottom: 12px;
     max-width: 78%;
     width: fit-content;
@@ -123,12 +118,25 @@ h2, h3, h4 {
     margin-left: auto;
     margin-right: 0;
     flex-direction: row-reverse;
-    border-right: 3px solid var(--accent-cyan);
 }
 [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
     margin-right: auto;
     margin-left: 0;
-    border-left: 3px solid var(--accent-pink);
+}
+
+[data-testid="stChatMessageContent"] {
+    border-radius: 18px;
+    padding: 6px 12px;
+}
+[data-testid="stChatMessageContent"][aria-label="Chat message from user"] {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.16);
+}
+[data-testid="stChatMessageContent"][aria-label="Chat message from assistant"] {
+    background: #1c1c24;
+    border: 1px solid rgba(255,255,255,0.09);
 }
 
 .typing-dots {
