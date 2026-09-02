@@ -110,6 +110,10 @@ h2, h3, h4 {
 }
 
 [data-testid="stChatMessage"] {
+    background: rgba(28,28,36,0.98);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 18px;
+    padding: 4px 8px;
     margin-bottom: 12px;
     max-width: 78%;
     width: fit-content;
@@ -118,25 +122,18 @@ h2, h3, h4 {
     margin-left: auto;
     margin-right: 0;
     flex-direction: row-reverse;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-color: rgba(255,255,255,0.16);
 }
 [data-testid="stChatMessage"]:has([aria-label="Chat message from assistant"]) {
     margin-right: auto;
     margin-left: 0;
 }
 
-[data-testid="stChatMessageContent"] {
-    border-radius: 18px;
-    padding: 6px 12px;
-}
-[data-testid="stChatMessageContent"][aria-label="Chat message from user"] {
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.16);
-}
-[data-testid="stChatMessageContent"][aria-label="Chat message from assistant"] {
-    background: #1c1c24;
-    border: 1px solid rgba(255,255,255,0.09);
+[data-testid="stChatMessageAvatarCustom"] {
+    background: rgba(255,255,255,0.99) !important;
 }
 
 .typing-dots {
@@ -216,11 +213,6 @@ h2, h3, h4 {
     font-size: 0.85rem;
 }
 
-[data-testid="stAppViewContainer"] {
-    position: relative;
-    z-index: 1;
-}
-
 [data-testid="stHeader"] {
     background: transparent !important;
 }
@@ -246,94 +238,33 @@ h2, h3, h4 {
     .stApp { animation: none; }
 }
 
-.shards-bg {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-    z-index: 0;
-    background:
-        radial-gradient(ellipse 60% 50% at 80% 12%, rgba(255,46,159,0.10), transparent 60%),
-        radial-gradient(ellipse 55% 45% at 12% 88%, rgba(0,229,255,0.09), transparent 60%),
-        var(--bg);
-}
-.shard {
+.stApp::before {
+    content: "";
     position: absolute;
-    mix-blend-mode: screen;
-    filter: blur(2.5px);
-    will-change: transform, opacity;
-    animation-name: shardDrift;
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    filter: blur(1px);
+    background:
+        linear-gradient(118deg, transparent 38%, rgba(0,229,255,0.11) 39.5%, rgba(0,229,255,0.11) 41.5%, transparent 43%),
+        linear-gradient(118deg, transparent 58%, rgba(255,46,159,0.10) 59.5%, rgba(255,46,159,0.10) 61.5%, transparent 63%),
+        linear-gradient(65deg, transparent 18%, rgba(255,176,32,0.09) 19.5%, rgba(255,176,32,0.09) 21%, transparent 22.5%),
+        linear-gradient(65deg, transparent 72%, rgba(0,229,255,0.08) 73.5%, rgba(0,229,255,0.08) 75%, transparent 76.5%),
+        radial-gradient(ellipse 60% 50% at 80% 12%, rgba(255,46,159,0.10), transparent 60%),
+        radial-gradient(ellipse 55% 45% at 12% 88%, rgba(0,229,255,0.09), transparent 60%);
+    background-size: 180% 180%, 180% 180%, 160% 160%, 160% 160%, 100% 100%, 100% 100%;
+    animation: shardsShift 42s ease-in-out infinite;
 }
-.shard-a { clip-path: polygon(0% 45%, 22% 0%, 100% 32%, 78% 100%, 0% 68%); }
-.shard-b { clip-path: polygon(12% 0%, 100% 22%, 88% 100%, 0% 78%); }
-.shard-c { clip-path: polygon(0% 22%, 100% 0%, 82% 62%, 28% 100%); }
-
-@keyframes shardDrift {
-    0%, 100% {
-        transform: translate(0, 0) rotate(var(--rot0, -4deg));
-        opacity: var(--op-lo, 0.28);
-    }
-    50% {
-        transform: translate(var(--dx, 3vw), var(--dy, 2vh)) rotate(var(--rot1, 5deg));
-        opacity: var(--op-hi, 0.5);
-    }
+@keyframes shardsShift {
+    0%, 100% { background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%; }
+    50% { background-position: 18% 12%, -14% -10%, -10% 8%, 12% -14%, 0% 0%, 0% 0%; }
 }
-
 @media (prefers-reduced-motion: reduce) {
-    .shard { animation: none; opacity: var(--op-hi, 0.4); }
+    .stApp::before { animation: none; }
 }
 </style>
 """
 st.markdown(THEME_CSS, unsafe_allow_html=True)
-
-_SHARDS = [
-    dict(shape="a", top="4%", left="68%", w="150px", h="60px", rot="-18deg",
-         grad="135deg, rgba(0,229,255,0.30), rgba(0,229,255,0.02)",
-         dx="2.5vw", dy="-1.5vh", rot0="-18deg", rot1="-12deg", op_lo="0.14", op_hi="0.26",
-         dur="24s", delay="0s"),
-    dict(shape="b", top="14%", left="84%", w="110px", h="46px", rot="12deg",
-         grad="120deg, rgba(255,46,159,0.28), rgba(255,46,159,0.02)",
-         dx="-2vw", dy="2vh", rot0="12deg", rot1="20deg", op_lo="0.12", op_hi="0.22",
-         dur="30s", delay="1.5s"),
-    dict(shape="c", top="2%", left="46%", w="90px", h="90px", rot="4deg",
-         grad="150deg, rgba(255,176,32,0.24), rgba(255,176,32,0.02)",
-         dx="1.5vw", dy="2.5vh", rot0="4deg", rot1="-3deg", op_lo="0.08", op_hi="0.16",
-         dur="28s", delay="3s"),
-    dict(shape="b", top="60%", left="90%", w="130px", h="54px", rot="-30deg",
-         grad="140deg, rgba(0,229,255,0.26), rgba(0,229,255,0.02)",
-         dx="-2.5vw", dy="-2vh", rot0="-30deg", rot1="-22deg", op_lo="0.10", op_hi="0.20",
-         dur="34s", delay="0.8s"),
-    dict(shape="a", top="78%", left="8%", w="140px", h="58px", rot="10deg",
-         grad="130deg, rgba(255,46,159,0.26), rgba(255,46,159,0.02)",
-         dx="2vw", dy="-2vh", rot0="10deg", rot1="4deg", op_lo="0.10", op_hi="0.20",
-         dur="26s", delay="2s"),
-    dict(shape="c", top="42%", left="-4%", w="100px", h="100px", rot="-8deg",
-         grad="145deg, rgba(255,176,32,0.20), rgba(255,176,32,0.02)",
-         dx="1.8vw", dy="1.5vh", rot0="-8deg", rot1="-2deg", op_lo="0.07", op_hi="0.14",
-         dur="32s", delay="4s"),
-    dict(shape="b", top="6%", left="16%", w="80px", h="34px", rot="20deg",
-         grad="120deg, rgba(0,229,255,0.22), rgba(0,229,255,0.02)",
-         dx="-1.5vw", dy="1.8vh", rot0="20deg", rot1="28deg", op_lo="0.07", op_hi="0.14",
-         dur="22s", delay="2.6s"),
-    dict(shape="a", top="88%", left="54%", w="120px", h="48px", rot="-14deg",
-         grad="135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.01)",
-         dx="2vw", dy="-1.5vh", rot0="-14deg", rot1="-8deg", op_lo="0.05", op_hi="0.10",
-         dur="29s", delay="1s"),
-]
-
-_shard_divs = "".join(
-    f'<div class="shard shard-{s["shape"]}" style="'
-    f'top:{s["top"]};left:{s["left"]};width:{s["w"]};height:{s["h"]};'
-    f'background:linear-gradient({s["grad"]});'
-    f'--rot0:{s["rot0"]};--rot1:{s["rot1"]};--dx:{s["dx"]};--dy:{s["dy"]};'
-    f'--op-lo:{s["op_lo"]};--op-hi:{s["op_hi"]};'
-    f'animation-duration:{s["dur"]};animation-delay:{s["delay"]};'
-    f'transform:rotate({s["rot"]});"></div>'
-    for s in _SHARDS
-)
-st.markdown(f'<div class="shards-bg">{_shard_divs}</div>', unsafe_allow_html=True)
 
 APP_PASSWORD = os.getenv("APP_PASSWORD")
 
