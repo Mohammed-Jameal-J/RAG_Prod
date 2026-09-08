@@ -15,7 +15,7 @@ A Streamlit app that lets you upload one or more PDFs and ask questions about th
 - Shows page count and chunk count for whatever you've indexed
 - Supports multiple PDFs combined into a single searchable index
 - Optional password gate (`APP_PASSWORD`) to keep the app private
-- Shared rate limit (20 questions/minute across all visitors) to protect the Groq quota from abuse
+- Shared rate limit (20 questions/minute across all visitors) plus a stricter per-session limit (8 questions/minute) to protect the Groq quota from abuse
 - Repeated first-turn questions are served from an in-memory cache instead of re-calling Groq
 
 ## How it works

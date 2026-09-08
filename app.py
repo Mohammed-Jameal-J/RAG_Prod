@@ -1,5 +1,6 @@
 import base64
 import os
+from collections import deque
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -323,7 +324,8 @@ if APP_PASSWORD:
                 unsafe_allow_html=True,
             )
             st.markdown(
-                '<p class="gz-caption">This app is password-protected.</p>',
+                '<p class="gz-caption">This app is password-protected. '
+                f'Demo password: <code>{APP_PASSWORD}</code></p>',
                 unsafe_allow_html=True,
             )
             with st.form("login_form"):
@@ -345,7 +347,15 @@ if APP_PASSWORD:
         st.stop()
 
 try:
-    from rag_engine import EmbeddingIndex, GROQ_MODEL, ask_groq, check_rate_limit, chunk_text, load_pdf
+    from rag_engine import (
+        EmbeddingIndex,
+        GROQ_MODEL,
+        ask_groq,
+        check_rate_limit,
+        check_session_rate_limit,
+        chunk_text,
+        load_pdf,
+    )
 except RuntimeError as exc:
     st.error(str(exc), icon=":material/error:")
     st.stop()
@@ -356,6 +366,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "page_count" not in st.session_state:
     st.session_state.page_count = 0
+if "session_request_times" not in st.session_state:
+    st.session_state.session_request_times = deque()
 
 with st.sidebar:
     st.markdown(
@@ -493,7 +505,14 @@ if question:
     with st.chat_message("user", avatar=":material/face:"):
         st.markdown(question)
 
-    if not check_rate_limit():
+    if not check_session_rate_limit(st.session_state.session_request_times):
+        answer = "You're sending questions a bit too fast — please slow down and try again in a moment."
+        with st.chat_message("assistant", avatar=":material/smart_toy:"):
+            st.warning(answer, icon=":material/hourglass_empty:")
+        st.session_state.messages.append(
+            {"role": "assistant", "content": answer, "sources": []}
+        )
+    elif not check_rate_limit():
         answer = "This app is getting a lot of questions right now — please wait a moment and try again."
         with st.chat_message("assistant", avatar=":material/smart_toy:"):
             st.warning(answer, icon=":material/hourglass_empty:")

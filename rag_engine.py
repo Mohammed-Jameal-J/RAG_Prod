@@ -25,23 +25,34 @@ RATE_LIMIT_MAX_REQUESTS = 20
 RATE_LIMIT_WINDOW_SECONDS = 60.0
 _request_times: deque[float] = deque()
 
+# Since the demo password is shown on the login screen (not a real secret),
+# this per-session cap is the actual defense against one visitor hogging the
+# shared quota above - it limits the blast radius of any single session.
+PER_SESSION_MAX_REQUESTS = 8
+PER_SESSION_WINDOW_SECONDS = 60.0
+
 _ANSWER_CACHE_MAX_SIZE = 200
 _answer_cache: dict[tuple, str] = {}
 
 
-def check_rate_limit() -> bool:
-    """Shared sliding-window limit across every visitor, protecting the Groq quota.
-
-    Returns True if this request is allowed (and records it), False if the
-    app is currently over the limit.
-    """
+def _sliding_window_allows(timestamps: deque, max_requests: int, window_seconds: float) -> bool:
     now = time.time()
-    while _request_times and now - _request_times[0] > RATE_LIMIT_WINDOW_SECONDS:
-        _request_times.popleft()
-    if len(_request_times) >= RATE_LIMIT_MAX_REQUESTS:
+    while timestamps and now - timestamps[0] > window_seconds:
+        timestamps.popleft()
+    if len(timestamps) >= max_requests:
         return False
-    _request_times.append(now)
+    timestamps.append(now)
     return True
+
+
+def check_rate_limit() -> bool:
+    """Shared sliding-window limit across every visitor, protecting the Groq quota."""
+    return _sliding_window_allows(_request_times, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_SECONDS)
+
+
+def check_session_rate_limit(session_times: deque) -> bool:
+    """Per-session sliding-window limit, caps how fast one visitor can fire questions."""
+    return _sliding_window_allows(session_times, PER_SESSION_MAX_REQUESTS, PER_SESSION_WINDOW_SECONDS)
 
 
 def get_embedder():
